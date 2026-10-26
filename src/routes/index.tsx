@@ -1,10 +1,21 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { BreakdownTable } from "@/components/dashboard/breakdown-table";
+import { CategoryTable } from "@/components/dashboard/category-table";
+import { CleanMetrics } from "@/components/dashboard/clean-metrics";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
+import { LedgerKpis } from "@/components/dashboard/ledger-kpis";
 import { LedgerPanel } from "@/components/dashboard/ledger-panel";
 import { TrendCharts } from "@/components/dashboard/trend-charts";
-import { loadLedger, saveLedger, type LedgerEntry } from "@/lib/ledger";
+import {
+  loadLedger,
+  loadPrefs,
+  MODES,
+  saveLedger,
+  savePrefs,
+  type FinanceMode,
+  type LedgerEntry,
+} from "@/lib/ledger";
 import {
   buildDashboard,
   clampRange,
@@ -26,12 +37,15 @@ function Home() {
   const initial = presetRange("30");
   const [from, setFrom] = useState(initial.from);
   const [to, setTo] = useState(initial.to);
+  const [mode, setMode] = useState<FinanceMode>("negocio");
+  const [sampleHidden, setSampleHidden] = useState(false);
   const [entries, setEntries] = useState<LedgerEntry[]>([]);
   const [ledgerReady, setLedgerReady] = useState(false);
+  const sample = mode === "negocio" && !sampleHidden;
   const range = useMemo(() => clampRange(from, to), [from, to]);
   const model = useMemo(
-    () => buildDashboard(range.from, range.to, entries),
-    [range.from, range.to, entries],
+    () => buildDashboard(range.from, range.to, entries, { sample }),
+    [range.from, range.to, entries, sample],
   );
   const activePreset = matchingPreset(range.from, range.to);
   const adjusted = from !== range.from || to !== range.to;
@@ -43,13 +57,34 @@ function Home() {
   }
 
   useEffect(() => {
-    setEntries(loadLedger());
+    const prefs = loadPrefs();
+    setMode(prefs.mode);
+    setSampleHidden(prefs.sampleHidden);
+    setEntries(loadLedger(prefs.mode));
     setLedgerReady(true);
   }, []);
 
   useEffect(() => {
-    if (ledgerReady) saveLedger(entries);
-  }, [entries, ledgerReady]);
+    if (ledgerReady) saveLedger(mode, entries);
+  }, [mode, entries, ledgerReady]);
+
+  useEffect(() => {
+    if (ledgerReady) savePrefs({ mode, sampleHidden });
+  }, [mode, sampleHidden, ledgerReady]);
+
+  // Mode and entries change in the same render, so the save effect never
+  // writes one system's movements under the other system's key.
+  function switchMode(next: FinanceMode) {
+    if (next === mode) return;
+    setMode(next);
+    setEntries(loadLedger(next));
+  }
+
+  function cleanMetrics() {
+    setEntries([]);
+    if (mode === "negocio") setSampleHidden(true);
+    applyPreset("30");
+  }
 
   function placeEntry(entry: LedgerEntry) {
     setFrom((current) => (entry.date < current ? entry.date : current));
@@ -78,12 +113,51 @@ function Home() {
         <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
             <p className="font-serif text-3xl leading-none tracking-tight text-ink italic">Cifra</p>
-            <h1 className="mt-2 text-base font-medium text-ink">Libro de ingresos</h1>
-            <p className="text-sm text-muted">Taller Norte · datos de muestra, disponibles sin conexión</p>
+            <h1 className="mt-2 text-base font-medium text-ink">
+              {mode === "personal" ? "Finanzas personales" : "Libro del negocio"}
+            </h1>
+            <p className="text-sm text-muted">
+              {mode === "personal"
+                ? "Tus cuentas · guardadas en este navegador"
+                : sample
+                  ? "Taller Norte · datos de muestra, disponibles sin conexión"
+                  : "Taller Norte · solo tus movimientos, guardados en este navegador"}
+            </p>
           </div>
-          <p className="text-sm text-muted">
-            Cierre al <span className="font-medium text-ink">{shortDate(DATA_END, true)}</span>
-          </p>
+          <div className="flex flex-col gap-2 sm:items-end">
+            <div className="flex flex-wrap items-center gap-2">
+              <div className="flex gap-1 rounded-xl bg-ink-soft p-1" role="group" aria-label="Sistema">
+                {MODES.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    aria-pressed={mode === item.id}
+                    onClick={() => switchMode(item.id)}
+                    className={cn(
+                      "min-h-11 rounded-lg px-3 text-sm font-medium transition-colors duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine",
+                      mode === item.id ? "bg-ink text-paper" : "text-ink hover:bg-surface",
+                    )}
+                  >
+                    {item.label}
+                  </button>
+                ))}
+              </div>
+              <CleanMetrics mode={mode} count={entries.length} sample={sample} onConfirm={cleanMetrics} />
+            </div>
+            {sample ? (
+              <p className="text-sm text-muted">
+                Cierre al <span className="font-medium text-ink">{shortDate(DATA_END, true)}</span>
+              </p>
+            ) : mode === "negocio" ? (
+              <button
+                type="button"
+                onClick={() => setSampleHidden(false)}
+                className="min-h-11 self-start rounded-xl px-1 text-sm font-medium text-pine underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine sm:self-end"
+              >
+                Restaurar datos de muestra
+              </button>
+            ) : null}
+          </div>
         </header>
 
         <section className="rounded-2xl bg-surface p-2 shadow-card" aria-label="Filtro de fechas">
@@ -150,6 +224,9 @@ function Home() {
         </div>
 
         <LedgerPanel
+          key={mode}
+          mode={mode}
+          sample={sample}
           entries={entries}
           from={range.from}
           to={range.to}
@@ -158,15 +235,25 @@ function Home() {
           onUpdate={updateEntry}
           onRemove={(id) => setEntries((current) => current.filter((entry) => entry.id !== id))}
         />
-        <KpiCards model={model} />
-        <TrendCharts points={model.trend.points} grain={model.trend.grain} />
-        <BreakdownTable
-          plans={model.plans}
-          channels={model.channels}
-          days={model.summary.days}
-          totalGrowth={model.summary.growth}
-          totalChurn={model.summary.churn}
-        />
+        {sample ? (
+          <>
+            <KpiCards model={model} />
+            <TrendCharts points={model.trend.points} grain={model.trend.grain} />
+            <BreakdownTable
+              plans={model.plans}
+              channels={model.channels}
+              days={model.summary.days}
+              totalGrowth={model.summary.growth}
+              totalChurn={model.summary.churn}
+            />
+          </>
+        ) : (
+          <>
+            <LedgerKpis model={model} mode={mode} />
+            <TrendCharts points={model.trend.points} grain={model.trend.grain} customers={false} />
+            <CategoryTable income={model.incomeCategories} expenses={model.expenseCategories} />
+          </>
+        )}
       </div>
     </main>
   );

@@ -1,15 +1,17 @@
 import { useRef, useState, type FormEvent } from "react";
 import { Pencil, Trash2 } from "lucide-react";
-import {
-  EXPENSE_CATEGORIES,
-  INCOME_CATEGORIES,
-  type LedgerEntry,
-  type LedgerKind,
-} from "@/lib/ledger";
+import { categoriesFor, type FinanceMode, type LedgerEntry, type LedgerKind } from "@/lib/ledger";
 import { DATA_START, formatMoney, LEDGER_END, shortDate } from "@/lib/revenue-data";
 import { cn } from "@/lib/cn";
 
+const PLACEHOLDERS: Record<FinanceMode, Record<LedgerKind, string>> = {
+  negocio: { ingreso: "Cobro de proyecto", gasto: "Anuncios" },
+  personal: { ingreso: "Nómina de octubre", gasto: "Supermercado" },
+};
+
 export function LedgerPanel({
+  mode,
+  sample,
   entries,
   from,
   to,
@@ -18,6 +20,8 @@ export function LedgerPanel({
   onUpdate,
   onRemove,
 }: {
+  mode: FinanceMode;
+  sample: boolean;
   entries: LedgerEntry[];
   from: string;
   to: string;
@@ -32,19 +36,19 @@ export function LedgerPanel({
   const [concept, setConcept] = useState("");
   const [amount, setAmount] = useState("");
   const [date, setDate] = useState(defaultDate);
-  const [category, setCategory] = useState<string>(INCOME_CATEGORIES[0]);
+  const [category, setCategory] = useState<string>(categoriesFor(mode, "ingreso")[0] ?? "");
   const [error, setError] = useState("");
 
-  const baseCategories = (kind === "ingreso" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES) as readonly string[];
+  const baseCategories = categoriesFor(mode, kind);
   const categories = baseCategories.includes(category) ? baseCategories : [category, ...baseCategories];
   const inRange = entries.filter((entry) => entry.date >= from && entry.date <= to);
   const outside = entries.length - inRange.length;
   const visible = [...inRange].sort((a, b) => b.date.localeCompare(a.date) || b.id.localeCompare(a.id));
 
   function chooseKind(next: LedgerKind) {
-    const nextCategories = (next === "ingreso" ? INCOME_CATEGORIES : EXPENSE_CATEGORIES) as readonly string[];
+    const nextCategories = categoriesFor(mode, next);
     setKind(next);
-    setCategory((current) => (nextCategories.includes(current) ? current : nextCategories[0]));
+    setCategory((current) => (nextCategories.includes(current) ? current : (nextCategories[0] ?? "")));
     setError("");
   }
 
@@ -139,7 +143,7 @@ export function LedgerPanel({
             value={concept}
             onChange={(event) => setConcept(event.target.value)}
             maxLength={80}
-            placeholder={kind === "ingreso" ? "Cobro de proyecto" : "Anuncios"}
+            placeholder={PLACEHOLDERS[mode][kind]}
             className="h-8 bg-transparent text-sm text-ink outline-none placeholder:text-faint"
           />
         </label>
@@ -207,9 +211,11 @@ export function LedgerPanel({
       <ul className="mt-4 divide-y divide-line">
         {visible.length === 0 ? (
           <li className="py-3 text-sm text-muted">
-            {entries.length === 0
-              ? "Todavía no hay movimientos propios. Los de muestra siguen en el libro."
-              : "No hay movimientos propios en este rango."}
+            {entries.length > 0
+              ? "No hay movimientos propios en este rango."
+              : sample
+                ? "Todavía no hay movimientos propios. Los de muestra siguen en el libro."
+                : "Todavía no hay movimientos. Añade el primero arriba."}
           </li>
         ) : (
           visible.map((entry) => (

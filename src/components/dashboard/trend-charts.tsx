@@ -12,6 +12,7 @@ import {
   YAxis,
 } from "recharts";
 import { formatAxis, formatCount, formatMoney, type TrendPoint } from "@/lib/revenue-data";
+import { cn } from "@/lib/cn";
 
 type TipPayload = {
   payload?: TrendPoint;
@@ -21,10 +22,12 @@ function ChartTip({
   active,
   payload,
   mode,
+  customers = true,
 }: {
   active?: boolean;
   payload?: TipPayload[];
   mode: "revenue" | "customers";
+  customers?: boolean;
 }) {
   const point = payload?.[0]?.payload;
   if (!active || !point) return null;
@@ -37,10 +40,19 @@ function ChartTip({
       <dl className="mt-1 grid grid-cols-[auto_auto] gap-x-4 gap-y-0.5 text-xs">
         <dt className="text-paper/70">Gastos</dt>
         <dd className="text-right tabular-nums">{formatMoney(point.expense)}</dd>
-        <dt className="text-paper/70">Altas</dt>
-        <dd className="text-right tabular-nums">{formatCount(point.newCustomers)}</dd>
-        <dt className="text-paper/70">Bajas</dt>
-        <dd className="text-right tabular-nums">{formatCount(point.cancellations)}</dd>
+        {customers ? (
+          <>
+            <dt className="text-paper/70">Altas</dt>
+            <dd className="text-right tabular-nums">{formatCount(point.newCustomers)}</dd>
+            <dt className="text-paper/70">Bajas</dt>
+            <dd className="text-right tabular-nums">{formatCount(point.cancellations)}</dd>
+          </>
+        ) : (
+          <>
+            <dt className="text-paper/70">Balance</dt>
+            <dd className="text-right tabular-nums">{formatMoney(point.revenue - point.expense)}</dd>
+          </>
+        )}
         {mode === "customers" ? (
           <>
             <dt className="text-paper/70">Ingresos</dt>
@@ -57,19 +69,28 @@ const axisTick = { fill: "var(--color-muted)", fontSize: 12 };
 export function TrendCharts({
   points,
   grain,
+  customers = true,
 }: {
   points: TrendPoint[];
   grain: string;
+  customers?: boolean;
 }) {
   const [ready, setReady] = useState(false);
   useEffect(() => setReady(true), []);
 
   return (
     <section className="grid gap-4 lg:grid-cols-5" aria-label="Tendencias">
-      <article className="rounded-2xl bg-surface p-4 shadow-card lg:col-span-3 sm:p-5">
+      <article
+        className={cn(
+          "rounded-2xl bg-surface p-4 shadow-card sm:p-5",
+          customers ? "lg:col-span-3" : "lg:col-span-5",
+        )}
+      >
         <header className="mb-4 flex flex-wrap items-end justify-between gap-2">
           <div>
-            <h2 className="text-sm font-medium text-ink">Tendencia de ingresos</h2>
+            <h2 className="text-sm font-medium text-ink">
+              {customers ? "Tendencia de ingresos" : "Ingresos y gastos"}
+            </h2>
             <p className="text-xs text-muted">Agrupado por {grain}</p>
           </div>
           <p className="flex flex-wrap items-center gap-3 text-xs text-muted">
@@ -106,7 +127,7 @@ export function TrendCharts({
                   tickFormatter={(value: number) => formatAxis(value)}
                 />
                 <Tooltip
-                  content={<ChartTip mode="revenue" />}
+                  content={<ChartTip mode="revenue" customers={customers} />}
                   cursor={{ stroke: "var(--color-line)", strokeWidth: 1 }}
                   wrapperStyle={{ outline: "none", zIndex: 30 }}
                 />
@@ -140,69 +161,71 @@ export function TrendCharts({
         </div>
       </article>
 
-      <article className="rounded-2xl bg-surface p-4 shadow-card lg:col-span-2 sm:p-5">
-        <header className="mb-4 flex flex-wrap items-end justify-between gap-2">
-          <div>
-            <h2 className="text-sm font-medium text-ink">Altas y bajas</h2>
-            <p className="text-xs text-muted">Mismo rango, por {grain}</p>
+      {customers ? (
+        <article className="rounded-2xl bg-surface p-4 shadow-card lg:col-span-2 sm:p-5">
+          <header className="mb-4 flex flex-wrap items-end justify-between gap-2">
+            <div>
+              <h2 className="text-sm font-medium text-ink">Altas y bajas</h2>
+              <p className="text-xs text-muted">Mismo rango, por {grain}</p>
+            </div>
+            <p className="flex items-center gap-3 text-xs text-muted">
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-ink" aria-hidden="true" />
+                Altas
+              </span>
+              <span className="inline-flex items-center gap-1.5">
+                <span className="size-2 rounded-full bg-rust" aria-hidden="true" />
+                Bajas
+              </span>
+            </p>
+          </header>
+          <div className="h-64 w-full sm:h-72">
+            {ready && points.length > 0 ? (
+              <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={points} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
+                  <CartesianGrid stroke="var(--color-line)" vertical={false} />
+                  <XAxis
+                    dataKey="label"
+                    tick={axisTick}
+                    axisLine={false}
+                    tickLine={false}
+                    minTickGap={24}
+                    dy={8}
+                  />
+                  <YAxis
+                    tick={axisTick}
+                    axisLine={false}
+                    tickLine={false}
+                    width={36}
+                    allowDecimals={false}
+                  />
+                  <Tooltip
+                    content={<ChartTip mode="customers" />}
+                    cursor={{ fill: "var(--color-ink-soft)" }}
+                    wrapperStyle={{ outline: "none", zIndex: 30 }}
+                  />
+                  <Bar
+                    dataKey="cancellations"
+                    fill="var(--color-rust)"
+                    radius={[4, 4, 0, 0]}
+                    maxBarSize={28}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="newCustomers"
+                    stroke="var(--color-ink)"
+                    strokeWidth={2}
+                    dot={false}
+                    activeDot={{ r: 4, fill: "var(--color-ink)", stroke: "var(--color-surface)" }}
+                  />
+                </ComposedChart>
+              </ResponsiveContainer>
+            ) : (
+              <ChartPlaceholder label="Preparando altas y bajas" />
+            )}
           </div>
-          <p className="flex items-center gap-3 text-xs text-muted">
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-2 rounded-full bg-ink" aria-hidden="true" />
-              Altas
-            </span>
-            <span className="inline-flex items-center gap-1.5">
-              <span className="size-2 rounded-full bg-rust" aria-hidden="true" />
-              Bajas
-            </span>
-          </p>
-        </header>
-        <div className="h-64 w-full sm:h-72">
-          {ready && points.length > 0 ? (
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={points} margin={{ top: 8, right: 8, left: 0, bottom: 0 }}>
-                <CartesianGrid stroke="var(--color-line)" vertical={false} />
-                <XAxis
-                  dataKey="label"
-                  tick={axisTick}
-                  axisLine={false}
-                  tickLine={false}
-                  minTickGap={24}
-                  dy={8}
-                />
-                <YAxis
-                  tick={axisTick}
-                  axisLine={false}
-                  tickLine={false}
-                  width={36}
-                  allowDecimals={false}
-                />
-                <Tooltip
-                  content={<ChartTip mode="customers" />}
-                  cursor={{ fill: "var(--color-ink-soft)" }}
-                  wrapperStyle={{ outline: "none", zIndex: 30 }}
-                />
-                <Bar
-                  dataKey="cancellations"
-                  fill="var(--color-rust)"
-                  radius={[4, 4, 0, 0]}
-                  maxBarSize={28}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="newCustomers"
-                  stroke="var(--color-ink)"
-                  strokeWidth={2}
-                  dot={false}
-                  activeDot={{ r: 4, fill: "var(--color-ink)", stroke: "var(--color-surface)" }}
-                />
-              </ComposedChart>
-            </ResponsiveContainer>
-          ) : (
-            <ChartPlaceholder label="Preparando altas y bajas" />
-          )}
-        </div>
-      </article>
+        </article>
+      ) : null}
     </section>
   );
 }

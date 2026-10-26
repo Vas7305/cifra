@@ -8,11 +8,11 @@ export const Route = createRootRoute({
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: `${APP_NAME} · Ingresos` },
+      { title: `${APP_NAME} · Finanzas personales y de negocio` },
       {
         name: "description",
         content:
-          "Tablero de ingresos con filtros de fecha, indicadores y tendencias. Datos de muestra, sin conexión.",
+          "Tablero de finanzas personales y de negocio con filtros de fecha, indicadores y tendencias. Funciona sin conexión.",
       },
       { name: "theme-color", content: "#f3efe6" },
     ],

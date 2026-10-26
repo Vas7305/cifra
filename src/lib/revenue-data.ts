@@ -197,10 +197,11 @@ function buildSeries(): DailyRow[] {
 export const SERIES: DailyRow[] = buildSeries();
 
 export function formatMoney(value: number) {
+  const rounded = Math.round(value);
   const formatted = new Intl.NumberFormat("es-ES", { maximumFractionDigits: 0 }).format(
-    Math.round(value),
+    Math.abs(rounded),
   );
-  return `$${formatted}`;
+  return `${rounded < 0 ? "−" : ""}$${formatted}`;
 }
 
 export function formatAxis(value: number) {
@@ -208,8 +209,8 @@ export function formatAxis(value: number) {
   if (abs >= 1000) {
     const compact = new Intl.NumberFormat("es-ES", {
       maximumFractionDigits: abs >= 10000 ? 0 : 1,
-    }).format(value / 1000);
-    return `$${compact} mil`;
+    }).format(abs / 1000);
+    return `${value < 0 ? "−" : ""}$${compact} mil`;
   }
   return formatMoney(value);
 }
@@ -301,6 +302,9 @@ export type Summary = {
   prevExpenses: number;
   expenseGrowth: number | null;
   manualIncome: number;
+  balance: number;
+  prevBalance: number;
+  savingsRate: number | null;
 };
 
 function sumBy<T>(rows: T[], pick: (row: T) => number) {
@@ -369,6 +373,16 @@ function trendSeries(rows: DailyRow[], span: number): Trend {
   return { grain, points: [...buckets.values()] };
 }
 
+// Without sample rows the chart only gets points where entries exist, so give
+// every day, week or month in the range a zero point to keep the axis whole.
+function seedPoints(trend: Trend, from: string, span: number) {
+  for (let index = 0; index < span; index += 1) {
+    const date = format(addDays(parseISO(from), index), "yyyy-MM-dd");
+    const key = pointMeta(date, trend.grain).key;
+    if (!trend.points.some((point) => point.key === key)) trend.points.push(emptyPoint(date, trend.grain));
+  }
+}
+
 function sumEntries(entries: LedgerEntry[], from: string, to: string, kind: LedgerEntry["kind"]) {
   return entries.reduce((total, entry) => {
     if (entry.kind !== kind || entry.date < from || entry.date > to) return total;
@@ -426,11 +440,52 @@ function segmentRows(
   });
 }
 
+export type CategoryRow = {
+  id: string;
+  name: string;
+  amount: number;
+  share: number;
+  growth: number | null;
+};
+
+function categoryRows(
+  entries: LedgerEntry[],
+  kind: LedgerEntry["kind"],
+  bounds: { from: string; to: string; prevFrom: string; prevTo: string },
+  comparable: boolean,
+): CategoryRow[] {
+  const current = new Map<string, number>();
+  const previous = new Map<string, number>();
+  for (const entry of entries) {
+    if (entry.kind !== kind) continue;
+    if (entry.date >= bounds.from && entry.date <= bounds.to) {
+      current.set(entry.category, (current.get(entry.category) ?? 0) + entry.amount);
+    } else if (entry.date >= bounds.prevFrom && entry.date <= bounds.prevTo) {
+      previous.set(entry.category, (previous.get(entry.category) ?? 0) + entry.amount);
+    }
+  }
+  const total = [...current.values()].reduce((acc, value) => acc + value, 0);
+  return [...current.entries()]
+    .map(([name, amount]) => {
+      const prev = previous.get(name) ?? 0;
+      return {
+        id: name,
+        name,
+        amount,
+        share: total > 0 ? amount / total : 0,
+        growth: comparable && prev > 0 ? (amount - prev) / prev : null,
+      };
+    })
+    .sort((a, b) => b.amount - a.amount || a.name.localeCompare(b.name));
+}
+
 export type DashboardModel = {
   summary: Summary;
   trend: Trend;
   plans: BreakdownRow[];
   channels: BreakdownRow[];
+  incomeCategories: CategoryRow[];
+  expenseCategories: CategoryRow[];
   revenueSpark: number[];
   expenseSpark: number[];
   cancelSpark: number[];
@@ -444,12 +499,19 @@ function downsample(values: number[], max = 36) {
   return out;
 }
 
-export function buildDashboard(from: string, to: string, entries: LedgerEntry[] = []): DashboardModel {
-  const rows = windowRows(from, to);
+export function buildDashboard(
+  from: string,
+  to: string,
+  entries: LedgerEntry[] = [],
+  { sample = true }: { sample?: boolean } = {},
+): DashboardModel {
+  const rows = sample ? windowRows(from, to) : [];
   const prevBounds = previousBounds(from, to);
-  const prevRows = windowRows(prevBounds.from, prevBounds.to);
+  const prevRows = sample ? windowRows(prevBounds.from, prevBounds.to) : [];
   const span = differenceInCalendarDays(parseISO(to), parseISO(from)) + 1;
-  const comparable = rows.length > 0 && prevRows.length === prevBounds.length && span === rows.length;
+  const comparable = sample
+    ? rows.length > 0 && prevRows.length === prevBounds.length && span === rows.length
+    : prevBounds.from >= DATA_START;
   const manualIncome = sumEntries(entries, from, to, "ingreso");
   const prevManualIncome = sumEntries(entries, prevBounds.from, prevBounds.to, "ingreso");
   const expenses = sumEntries(entries, from, to, "gasto");
@@ -483,6 +545,7 @@ export function buildDashboard(from: string, to: string, entries: LedgerEntry[] 
   }
 
   const trend = trendSeries(rows, span);
+  if (!sample) seedPoints(trend, from, span);
   applyEntries(trend, entries, from, to);
 
   const sampleByDate = new Map(rows.map((row) => [row.date, row.revenue]));
@@ -527,13 +590,19 @@ export function buildDashboard(from: string, to: string, entries: LedgerEntry[] 
           ? 0
           : null,
     manualIncome,
+    balance: revenue - expenses,
+    prevBalance: prevRevenue - prevExpenses,
+    savingsRate: revenue > 0 ? (revenue - expenses) / revenue : null,
   };
+  const categoryBounds = { from, to, prevFrom: prevBounds.from, prevTo: prevBounds.to };
 
   return {
     summary,
     trend,
     plans,
     channels: segmentRows(rows, prevRows, comparable, "canal"),
+    incomeCategories: categoryRows(entries, "ingreso", categoryBounds, comparable),
+    expenseCategories: categoryRows(entries, "gasto", categoryBounds, comparable),
     revenueSpark: downsample(revenueSeries),
     expenseSpark: downsample(expenseSeries),
     cancelSpark: downsample(rows.map((row) => row.cancellations)),

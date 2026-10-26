@@ -9,7 +9,7 @@ import { cn } from "@/lib/cn";
 import { Hint } from "./hint";
 import { Sparkline } from "./sparkline";
 
-function Delta({
+export function Delta({
   value,
   invert = false,
 }: {
