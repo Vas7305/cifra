@@ -1,0 +1,59 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+
+# Runtime data
+pids
+*.pid
+*.seed
+*.pid.lock
+
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Testing
+coverage/
+
+# Production
+dist/
+dist-ssr/
+*.local
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# TypeScript
+*.tsbuildinfo
+
+.vercel
+.wrangler
+.env*
+# ...except the template. It documents the two variables per web property that
+# the panel needs, and src/lib/supabase.ts tells you to copy it when they are
+# missing — a file that error names and the repo does not contain is worse than
+# no message at all. It holds no secret: only placeholders and anon keys.
+!.env.example
+
+# Android
+*.apk
+
+# Signing keys and their passwords (APK release key, license key). Kept here, never committed.
+keys/

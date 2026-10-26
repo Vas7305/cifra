@@ -1,0 +1,72 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
+
+  --color-paper: #f3efe6;
+  --color-surface: #fffcf7;
+  --color-ink: #1c1915;
+  --color-muted: #6e685f;
+  --color-faint: #a39c92;
+  --color-line: #e4dccf;
+  --color-ink-soft: #f4f0e8;
+  --color-pine: #0f6b56;
+  --color-pine-soft: #e5f3ee;
+  --color-rust: #b4532a;
+  --color-rust-soft: #f8ebe4;
+}
+
+@layer base {
+  html {
+    background: var(--color-paper);
+    color: var(--color-ink);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    min-height: 100vh;
+    background: var(--color-paper);
+    font-family: var(--font-sans);
+    line-height: 1.5;
+  }
+
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+
+  input[type="date"] {
+    color-scheme: light;
+  }
+}
+
+@layer utilities {
+  .shadow-card {
+    box-shadow:
+      0 0 0 1px rgba(28, 25, 21, 0.06),
+      0 1px 2px -1px rgba(28, 25, 21, 0.06),
+      0 2px 4px rgba(28, 25, 21, 0.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
