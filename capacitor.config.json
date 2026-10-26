@@ -1,0 +1,8 @@
+{
+  "appId": "com.unchainedbusiness.cifra",
+  "appName": "Cifra",
+  "webDir": "dist/client",
+  "android": {
+    "backgroundColor": "#f0ede5"
+  }
+}

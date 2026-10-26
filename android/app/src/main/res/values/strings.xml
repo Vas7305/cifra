@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Cifra</string>
+    <string name="title_activity_main">Cifra</string>
+    <string name="package_name">com.unchainedbusiness.cifra</string>
+    <string name="custom_url_scheme">com.unchainedbusiness.cifra</string>
+</resources>
