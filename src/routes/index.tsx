@@ -1,11 +1,13 @@
 import { useEffect, useMemo, useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { Logo } from "@/components/brand/logo";
 import { BreakdownTable } from "@/components/dashboard/breakdown-table";
 import { CategoryTable } from "@/components/dashboard/category-table";
 import { CleanMetrics } from "@/components/dashboard/clean-metrics";
 import { KpiCards } from "@/components/dashboard/kpi-cards";
 import { LedgerKpis } from "@/components/dashboard/ledger-kpis";
 import { LedgerPanel } from "@/components/dashboard/ledger-panel";
+import { ThemeToggle } from "@/components/dashboard/theme-toggle";
 import { TrendCharts } from "@/components/dashboard/trend-charts";
 import {
   loadLedger,
@@ -112,7 +114,7 @@ function Home() {
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-6 sm:gap-5 sm:px-6 sm:py-8">
         <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="font-serif text-3xl leading-none tracking-tight text-ink italic">Cifra</p>
+            <Logo />
             <h1 className="mt-2 text-base font-medium text-ink">
               {mode === "personal" ? "Finanzas personales" : "Libro del negocio"}
             </h1>
@@ -143,6 +145,7 @@ function Home() {
                 ))}
               </div>
               <CleanMetrics mode={mode} count={entries.length} sample={sample} onConfirm={cleanMetrics} />
+              <ThemeToggle />
             </div>
             {sample ? (
               <p className="text-sm text-muted">

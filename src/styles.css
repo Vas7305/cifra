@@ -1,23 +1,73 @@
 @import "tailwindcss";
 
+/* Light palette: Sand (#f0ede5) paper with Cyprus (#004643) as the ink, so
+   text, selected chips and tooltips carry the brand color. Soft fills lean
+   mint and the accent is a brighter teal that stays distinct from the ink. */
 @theme {
   --font-sans: "Instrument Sans", ui-sans-serif, system-ui, sans-serif;
-  --font-serif: "Instrument Serif", Georgia, "Times New Roman", serif;
 
-  --color-paper: #f3efe6;
-  --color-surface: #fffcf7;
-  --color-ink: #1c1915;
-  --color-muted: #6e685f;
-  --color-faint: #a39c92;
-  --color-line: #e4dccf;
-  --color-ink-soft: #f4f0e8;
-  --color-pine: #0f6b56;
-  --color-pine-soft: #e5f3ee;
-  --color-rust: #b4532a;
-  --color-rust-soft: #f8ebe4;
+  --color-paper: #f0ede5;
+  --color-surface: #fbfaf6;
+  --color-ink: #004643;
+  --color-muted: #4a6763;
+  --color-faint: #8fa39e;
+  --color-line: #d3ddd7;
+  --color-ink-soft: #d9e7e0;
+  --color-pine: #08705f;
+  --color-pine-soft: #dcefe8;
+  --color-rust: #a3421c;
+  --color-rust-soft: #f7e4d9;
+  --color-scrim: rgb(0 40 38 / 0.5);
 }
 
+/* Dark palette: Cyprus-tinted surfaces with Sand as the ink. Applied when the
+   system prefers dark (unless the user picked light) or when the user picked
+   dark explicitly. Keep both blocks in sync. */
 @layer base {
+  :root {
+    color-scheme: light;
+    --shadow-ring: rgb(0 70 67 / 0.08);
+    --shadow-drop: rgb(0 70 67 / 0.07);
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      color-scheme: dark;
+      --color-paper: #021c1a;
+      --color-surface: #072a27;
+      --color-ink: #f0ede5;
+      --color-muted: #a6b3af;
+      --color-faint: #6c7f7b;
+      --color-line: #18403c;
+      --color-ink-soft: #0d3532;
+      --color-pine: #5dbba9;
+      --color-pine-soft: #0f3d37;
+      --color-rust: #e5895f;
+      --color-rust-soft: #3b2520;
+      --color-scrim: rgb(0 0 0 / 0.6);
+      --shadow-ring: rgb(240 237 229 / 0.07);
+      --shadow-drop: rgb(0 0 0 / 0.25);
+    }
+  }
+
+  :root[data-theme="dark"] {
+    color-scheme: dark;
+    --color-paper: #021c1a;
+    --color-surface: #072a27;
+    --color-ink: #f0ede5;
+    --color-muted: #a6b3af;
+    --color-faint: #6c7f7b;
+    --color-line: #18403c;
+    --color-ink-soft: #0d3532;
+    --color-pine: #5dbba9;
+    --color-pine-soft: #0f3d37;
+    --color-rust: #e5895f;
+    --color-rust-soft: #3b2520;
+    --color-scrim: rgb(0 0 0 / 0.6);
+    --shadow-ring: rgb(240 237 229 / 0.07);
+    --shadow-drop: rgb(0 0 0 / 0.25);
+  }
+
   html {
     background: var(--color-paper);
     color: var(--color-ink);
@@ -46,18 +96,14 @@
   [role="button"]:not(:disabled) {
     cursor: pointer;
   }
-
-  input[type="date"] {
-    color-scheme: light;
-  }
 }
 
 @layer utilities {
   .shadow-card {
     box-shadow:
-      0 0 0 1px rgba(28, 25, 21, 0.06),
-      0 1px 2px -1px rgba(28, 25, 21, 0.06),
-      0 2px 4px rgba(28, 25, 21, 0.04);
+      0 0 0 1px var(--shadow-ring),
+      0 1px 2px -1px var(--shadow-drop),
+      0 2px 4px var(--shadow-drop);
   }
 }
 

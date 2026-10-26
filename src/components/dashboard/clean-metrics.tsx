@@ -33,7 +33,7 @@ export function CleanMetrics({
         </button>
       </AlertDialog.Trigger>
       <AlertDialog.Portal>
-        <AlertDialog.Overlay className="fixed inset-0 z-40 bg-ink/40" />
+        <AlertDialog.Overlay className="fixed inset-0 z-40 bg-scrim" />
         <AlertDialog.Content className="fixed top-1/2 left-1/2 z-50 w-[calc(100%-2rem)] max-w-md -translate-x-1/2 -translate-y-1/2 rounded-2xl bg-surface p-5 text-ink shadow-card focus-visible:outline-none">
           <AlertDialog.Title className="text-base font-medium">
             ¿Limpiar las métricas?
