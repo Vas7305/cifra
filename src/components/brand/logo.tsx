@@ -43,7 +43,7 @@ export function Logo({ className }: { className?: string }) {
       className={cn("flex items-center gap-2.5 text-ink", className)}
     >
       <Isotype className="size-9" />
-      <Logotype className="h-6 w-auto" />
+      <Logotype className="h-6 w-auto max-[25rem]:hidden" />
     </p>
   );
 }

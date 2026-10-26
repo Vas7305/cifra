@@ -1,5 +1,18 @@
 @import "tailwindcss";
 
+/* dark: follows the same rules as the dark palette below — the system
+   preference unless the user picked light, or an explicit dark pick. */
+@custom-variant dark {
+  @media (prefers-color-scheme: dark) {
+    &:where(:root:not([data-theme="light"]) *) {
+      @slot;
+    }
+  }
+  &:where(:root[data-theme="dark"] *) {
+    @slot;
+  }
+}
+
 /* Light palette: Sand (#f0ede5) paper with Cyprus (#004643) as the ink, so
    text, selected chips and tooltips carry the brand color. Soft fills lean
    mint and the accent is a brighter teal that stays distinct from the ink. */

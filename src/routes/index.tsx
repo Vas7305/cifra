@@ -110,12 +110,37 @@ function Home() {
 
   return (
     <main className="min-h-screen bg-paper text-ink">
-      <div className="h-1 bg-pine" />
+      <nav
+        className="sticky top-0 z-30 border-b border-line bg-surface/90 backdrop-blur"
+        aria-label="Barra principal"
+      >
+        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between gap-3 px-4 sm:px-6">
+          <Logo />
+          <div className="flex items-center gap-2">
+            <div className="flex gap-1 rounded-xl bg-ink-soft p-1" role="group" aria-label="Sistema">
+              {MODES.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-pressed={mode === item.id}
+                  onClick={() => switchMode(item.id)}
+                  className={cn(
+                    "min-h-11 rounded-lg px-3 text-sm font-medium transition-colors duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine",
+                    mode === item.id ? "bg-ink text-paper" : "text-ink hover:bg-surface",
+                  )}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+            <ThemeToggle />
+          </div>
+        </div>
+      </nav>
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-4 px-4 py-6 sm:gap-5 sm:px-6 sm:py-8">
-        <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+        <header className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between sm:gap-3">
           <div>
-            <Logo />
-            <h1 className="mt-2 text-base font-medium text-ink">
+            <h1 className="text-base font-medium text-ink">
               {mode === "personal" ? "Finanzas personales" : "Libro del negocio"}
             </h1>
             <p className="text-sm text-muted">
@@ -126,41 +151,19 @@ function Home() {
                   : "Taller Norte · solo tus movimientos, guardados en este navegador"}
             </p>
           </div>
-          <div className="flex flex-col gap-2 sm:items-end">
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex gap-1 rounded-xl bg-ink-soft p-1" role="group" aria-label="Sistema">
-                {MODES.map((item) => (
-                  <button
-                    key={item.id}
-                    type="button"
-                    aria-pressed={mode === item.id}
-                    onClick={() => switchMode(item.id)}
-                    className={cn(
-                      "min-h-11 rounded-lg px-3 text-sm font-medium transition-colors duration-200 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine",
-                      mode === item.id ? "bg-ink text-paper" : "text-ink hover:bg-surface",
-                    )}
-                  >
-                    {item.label}
-                  </button>
-                ))}
-              </div>
-              <CleanMetrics mode={mode} count={entries.length} sample={sample} onConfirm={cleanMetrics} />
-              <ThemeToggle />
-            </div>
-            {sample ? (
-              <p className="text-sm text-muted">
-                Cierre al <span className="font-medium text-ink">{shortDate(DATA_END, true)}</span>
-              </p>
-            ) : mode === "negocio" ? (
-              <button
-                type="button"
-                onClick={() => setSampleHidden(false)}
-                className="min-h-11 self-start rounded-xl px-1 text-sm font-medium text-pine underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine sm:self-end"
-              >
-                Restaurar datos de muestra
-              </button>
-            ) : null}
-          </div>
+          {sample ? (
+            <p className="text-sm text-muted">
+              Cierre al <span className="font-medium text-ink">{shortDate(DATA_END, true)}</span>
+            </p>
+          ) : mode === "negocio" ? (
+            <button
+              type="button"
+              onClick={() => setSampleHidden(false)}
+              className="min-h-11 self-start rounded-xl px-1 text-sm font-medium text-pine underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-pine sm:self-end"
+            >
+              Restaurar datos de muestra
+            </button>
+          ) : null}
         </header>
 
         <section className="rounded-2xl bg-surface p-2 shadow-card" aria-label="Filtro de fechas">
@@ -257,6 +260,32 @@ function Home() {
             <CategoryTable income={model.incomeCategories} expenses={model.expenseCategories} />
           </>
         )}
+
+        <footer className="mt-2 flex flex-col-reverse gap-5 border-t border-line pt-5 sm:flex-row sm:items-end sm:justify-between">
+          <a
+            href="https://www.unchainedbusiness.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex flex-col gap-1.5 self-start rounded-lg focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-pine"
+          >
+            <span className="text-xs text-muted">Powered by</span>
+            <img
+              src="/brand/unchained-business-dark.png"
+              alt="Unchained Business"
+              width={1000}
+              height={293}
+              className="h-12 w-auto dark:hidden"
+            />
+            <img
+              src="/brand/unchained-business-light.png"
+              alt="Unchained Business"
+              width={1000}
+              height={297}
+              className="hidden h-12 w-auto dark:block"
+            />
+          </a>
+          <CleanMetrics mode={mode} count={entries.length} sample={sample} onConfirm={cleanMetrics} />
+        </footer>
       </div>
     </main>
   );
